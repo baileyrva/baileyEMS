@@ -300,7 +300,7 @@ function updateData(option) {
               message: "Select the employee's new role: ",
               choices: roles
             }
-          ]);
+          ])
           .then(function (res) {
               console.log("Updating existing employee...\n");
               connection.query(
