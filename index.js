@@ -144,6 +144,7 @@ function createData(option) {
       });
       break;
 
+    //role statement
     case "Role":
       connection.query("SELECT * FROM department", function(err, res) {
         if (err) throw err;
@@ -156,23 +157,178 @@ function createData(option) {
         });
         departments.push("N/A");
 
-        inquirer.prompt([{
-            name: "title", 
-            type: "input", 
-            message: "What is the title of the new role?", 
-        }, 
-        {
-            name: "salary",
-            type: "number", 
-            message: "What is the salary of the new role?",
-        },
-        {
-            name: "department", 
-            type: "list", 
-            message: "What is the employee's department?",
-            choices: departments
-        }
-        ])
+        inquirer
+          .prompt([
+            {
+              name: "title",
+              type: "input",
+              message: "What is the title of the new role?"
+            },
+            {
+              name: "salary",
+              type: "number",
+              message: "What is the salary of the new role?"
+            },
+            {
+              name: "department",
+              type: "list",
+              message: "What is the employee's department?",
+              choices: departments
+            }
+          ])
+          .then(function(res) {
+            if (res.department === "N/A") {
+              genDepartmentPrompt();
+            } else {
+              console.log("Inserting a new role...m");
+              connection.query(
+                "INSERT INTO roles SET ?",
+                {
+                  role_title: res.title,
+                  salary: res.salary,
+                  department_id: res.department
+                },
+                function(err, res) {
+                  if (err) throw err;
+                  console.log(res.affectedRows + " Role inserted!\n");
+                  continuePrompt();
+                }
+              );
+            }
+          })
+          .catch(function(err) {
+            console.log(err);
+          });
       });
+      break;
+
+    //create department
+    case "Department":
+      inqurier
+        .prompt([
+          {
+            name: "departmentname",
+            type: "input",
+            message: "What is the name of the new Department?"
+          }
+        ])
+        .then(function(res) {
+          console.log("Inserting a new Department...\n");
+          connection.query(
+            "INSERT INTO department SET ?",
+            {
+              departmentName: res.departmentname
+            },
+            function(err, res) {
+              if (err) throw err;
+              console.log(res.affectedRows + " Department inserted\n");
+              continuePrompt();
+            }
+          );
+        })
+        .catch(function(err) {
+          console.log(err);
+        });
+      break;
   }
 }
+
+//reading the data function
+
+function readData(res) {
+  switch (res) {
+    case "Employee":
+      console.log("Selecting all employees...\n");
+      connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        console.table(res);
+        continuePrompt();
+      });
+      break;
+    case "Role":
+      console.log("Selecting all roles...\n");
+      connection.query("SELECT * FROM roles", function(err, res) {
+        if (err) throw err;
+        console.table(res);
+        continuePrompt();
+      });
+      break;
+    case "Department":
+      console.log("Selecting all departments...\n");
+      connection.query("SELECT * FROM department", function(err, res) {
+        if (err) throw err;
+        console.table(res);
+        continuePrompt();
+      });
+      break;
+  }
+}
+
+//updating the data function
+
+function updateData(option) {
+  switch (option) {
+    case "Employee":
+      connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        const employees = res.map(object => {
+          return {
+            name: "${object.first_name} ${object.last_name}",
+            value: object.e_id
+          };
+        });
+        connection.query("SELECT * FROM roles", function(err, res) {
+          if (err) throw err;
+          const roles = res.map(object => {
+            return {
+              name: object.role_title,
+              value: object.r_id
+            };
+          });
+
+          console.log("Updating employee position...\n");
+          inquirer.prompt([
+            {
+              name: "employee",
+              type: "list",
+              message: "Which employee would you like to modify?",
+              choices: employees
+            },
+            {
+              name: "role",
+              type: "list",
+              message: "Select the employee's new role: ",
+              choices: roles
+            }
+          ]);
+          .then(function (res) {
+              console.log("Updating existing employee...\n");
+              connection.query(
+                  "UPDATE employee SET ? WHERE ?",
+                  [{
+                      role_id: res.role
+                  }
+                ],
+                function (err, res) {
+                    if (err) throw err; 
+                    console.log(res.affectedRows + "employee updated!\n"); 
+                    continuePrompt()
+                }
+              )
+          })
+          .catch(function (err) {
+              console.log(err); 
+          })
+        });
+      });
+      break; 
+    case 'Role':
+        console.log("Can't update role...\n");
+        continuePrompt()
+        break; 
+    case 'Department':
+        console.log("Can't update department...\n");
+        continuePrompt()
+        break; 
+  }
+};
