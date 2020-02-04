@@ -5,7 +5,7 @@ const mysql = require("mysql");
 let connection = mysql.createConnection({
   host: "localhost",
 
-  port: 3000,
+  port: 3306,
 
   //database information for
   user: "root",
@@ -38,7 +38,7 @@ function startApp() {
     // switch statement after choice
 
     .then(function(res) {
-      console.log("You chose ${res.action} a ${res.option}");
+      console.log(`You chose ${res.action} a ${res.option}`);
 
       switch (res.action) {
         case "Add":
@@ -78,7 +78,7 @@ function createData(option) {
           if (err) throw err;
           const employees = res.map(object => {
             return {
-              name: "${object.first_name} ${object.last_name}",
+              name: `${object.first_name} ${object.last_name}`,
               value: object.e_id
             };
           });
@@ -118,7 +118,7 @@ function createData(option) {
                 genRolePrompt();
               } else {
                 console.log(
-                  "Inserting ${res.first_name} ${res.last_name} as a new employee...\n"
+                  `Inserting ${res.first_name} ${res.last_name} as a new employee...\n`
                 );
                 console.log(res.manager);
                 connection.query(
@@ -204,7 +204,7 @@ function createData(option) {
 
     //create department
     case "Department":
-      inqurier
+      inquirer
         .prompt([
           {
             name: "departmentname",
@@ -273,7 +273,7 @@ function updateData(option) {
         if (err) throw err;
         const employees = res.map(object => {
           return {
-            name: "${object.first_name} ${object.last_name}",
+            name: `${object.first_name} ${object.last_name}`,
             value: object.e_id
           };
         });
@@ -327,8 +327,79 @@ function updateData(option) {
         continuePrompt()
         break; 
     case 'Department':
-        console.log("Can't update department...\n");
+        console.log("Can't remove department...unless you're a manager.\n");
         continuePrompt()
         break; 
   }
 };
+
+//continuing and exit functions defined 
+
+function continuePrompt() {
+    inquirer.prompt({
+        name: "action",
+        type: "list", 
+        message: "Would you like to continue or exit?", 
+        choices: ["CONTINUE", "EXIT"]
+    })
+    .then(function (res) {
+        console.log(`${res.action}...\n`);
+        switch (res.action) {
+            case "EXIT":
+                connection.end(); 
+                break;
+                case "CONTINUE":
+                    startApp();
+                    break; 
+        }
+    })
+    .catch(function (err) {
+        console.log(err); 
+    })
+}
+
+function genDepartmentPrompt() {
+    inquirer.prompt({
+        name: "action", 
+        type: "list",
+        message: "Please finish adding this role by creating the correct department.",
+        choices: ["CONTINUE", "EXIT"]
+    })
+    .then(function (res) {
+        console.log(`${res.action}...\n`);
+        switch (res.action) {
+            case "EXIT":
+                connection.end(); 
+                break; 
+            case "CONTINUE":
+                startApp(); 
+                break;
+        }
+    })
+    .catch(function (err) {
+        console.log(err); 
+    })
+}
+
+function genRolePrompt() {
+    inquirer.prompt({
+        name: "action", 
+        type: "list",
+        message: "Please finish adding this employee by creating the correct role.",
+        choices: ["CONTINUE", "EXIT"]
+    })
+    .then(function (res) {
+        console.log(`${res.action}...\n`);
+        switch (res.action) {
+            case "EXIT": 
+                connection.end(); 
+                break; 
+            case "CONTINUE":
+                startApp(); 
+                break; 
+        }
+    })
+    .catch(function (err) {
+        console.log(err);
+    })
+}
