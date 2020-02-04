@@ -24,9 +24,37 @@ function startApp() {
     {
       name: "action",
       type: "list",
-      message: "Select one of the following:",
+      message: "Select one of the following: ",
       choices: ["Add", "View", "Update", "Delete"]
     },
-    {}
-  ]);
-}
+    {
+        name: "options",
+        type: "list", 
+        message: "select from the options below: ",
+        choices: ["Employee", "Role", "Department"]
+    }
+  ])
+  // switch statement after choice 
+
+  .then(function (res) {
+      console.log('You chose ${res.action} a ${res.option}');
+
+      switch (res.action) {
+          case "Add":
+              createData(res.option);
+              break; 
+          case "View":
+              readData(res.option);
+              break;
+          case "Update": 
+              updateData(res.option); 
+              break;  
+          case "Delete":
+              deleteData(res.option); 
+              break; 
+      }
+  })
+  .catch(function (err) {
+      console.log(err); 
+  });
+};
