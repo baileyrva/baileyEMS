@@ -246,7 +246,7 @@ function readData(res) {
   switch (res) {
     case "Employee":
       console.log("Selecting all employees...\n");
-      connection.query("SELECT * FROM employee", function(err, res) {
+      connection.query("SELECT * FROM employee INNER JOIN roles ON employee.e_id = roles.id", function(err, res) {
         if (err) throw err;
         console.table(res);
         continuePrompt();
