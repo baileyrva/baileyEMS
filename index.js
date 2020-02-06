@@ -1,6 +1,8 @@
 const inquirer = require("inquirer");
 const mysql = require("mysql");
 
+let PORT = process.env.PORT || 8080;
+
 //mysql connection to database
 let connection = mysql.createConnection({
   host: "localhost",
@@ -15,7 +17,11 @@ let connection = mysql.createConnection({
 });
 
 connection.connect(function(err) {
-  if (err) throw err;
+  if (err) {
+    console.error("error connecting: " + err.stack);
+    return;
+  }
+  console.log("connected as id " + connection.threadId);
   startApp();
 });
 
@@ -29,7 +35,7 @@ function startApp() {
         choices: ["Add", "View", "Update", "Delete"]
       },
       {
-        name: "options",
+        name: "option",
         type: "list",
         message: "select from the options below: ",
         choices: ["Employee", "Role", "Department"]
@@ -69,7 +75,7 @@ function createData(option) {
         const roles = res.map(object => {
           return {
             name: object.role_title,
-            value: object.r_id
+            value: object.id
           };
         });
         roles.push("N/A");
@@ -129,6 +135,7 @@ function createData(option) {
                     role_id: res.role,
                     manager_id: res.manager
                   },
+
                   function(err, res) {
                     if (err) throw err;
                     console.log(res.affectedRows + " employee added!\n");
@@ -287,119 +294,183 @@ function updateData(option) {
           });
 
           console.log("Updating employee position...\n");
-          inquirer.prompt([
+          inquirer
+            .prompt([
+              {
+                name: "employee",
+                type: "list",
+                message: "Which employee would you like to modify?",
+                choices: employees
+              },
+              {
+                name: "role",
+                type: "list",
+                message: "Select the employee's new role: ",
+                choices: roles
+              }
+            ])
+            .then(function(res) {
+              console.log("Updating existing employee...\n");
+              connection.query(
+                "UPDATE employee SET ? WHERE ?",
+                [
+                  {
+                    role_id: res.role
+                  },
+                  {
+                    e_id: res.employee
+                  }
+                ],
+                function(err, res) {
+                  if (err) throw err;
+                  console.log(res.affectedRows + " employee updated!\n");
+                  continuePrompt();
+                }
+              );
+            })
+            .catch(function(err) {
+              console.log(err);
+            });
+        });
+      });
+      break;
+    case "Role":
+      console.log("Can't update role...\n");
+      continuePrompt();
+      break;
+    case "Department":
+      console.log("Can't update department...\n");
+      continuePrompt();
+      break;
+  }
+}
+
+//delete function
+
+function deleteData(option) {
+  switch (option) {
+    case "Employee":
+      connection.query("SELECT * FROM employee", function(err, res) {
+        if (err) throw err;
+        const employees = res.map(object => {
+          return {
+            name: `${object.first_name} ${object.last_name}`,
+            value: object.e_id
+          };
+        });
+        inquirer
+          .prompt([
             {
               name: "employee",
               type: "list",
-              message: "Which employee would you like to modify?",
+              message: "Which employee would you like to remove?",
               choices: employees
-            },
-            {
-              name: "role",
-              type: "list",
-              message: "Select the employee's new role: ",
-              choices: roles
             }
           ])
-          .then(function (res) {
-              console.log("Updating existing employee...\n");
-              connection.query(
-                  "UPDATE employee SET ? WHERE ?",
-                  [{
-                      role_id: res.role
-                  }
-                ],
-                function (err, res) {
-                    if (err) throw err; 
-                    console.log(res.affectedRows + "employee updated!\n"); 
-                    continuePrompt()
+          .then(function(res) {
+            console.log("deleting an existing employee...\n");
+            connection.query(
+              "DELETE FROM employee WHERE ?",
+              [
+                {
+                  e_id: res.employee
                 }
-              )
+              ],
+              function(err, res) {
+                if (err) throw err;
+                console.log(res.affectedRows + " employee removed!\n");
+                continuePrompt();
+              }
+            );
           })
-          .catch(function (err) {
-              console.log(err); 
-          })
-        });
+          .catch(function(err) {
+            console.log(err);
+          });
       });
-      break; 
-    case 'Role':
-        console.log("Can't update role...\n");
-        continuePrompt()
-        break; 
-    case 'Department':
-        console.log("Can't remove department...unless you're a manager.\n");
-        continuePrompt()
-        break; 
+      break;
+    case "Role":
+      console.log("Can't remove a role...\n");
+      continuePrompt();
+      break;
+    case "Department":
+      console.log("Can't remove a department...unless you're the boss.\n");
+      continuePrompt();
+      break;
   }
-};
+}
 
-//continuing and exit functions defined 
+//continuing and exit functions defined
 
 function continuePrompt() {
-    inquirer.prompt({
-        name: "action",
-        type: "list", 
-        message: "Would you like to continue or exit?", 
-        choices: ["CONTINUE", "EXIT"]
+  inquirer
+    .prompt({
+      name: "action",
+      type: "list",
+      message: "Would you like to continue or exit?",
+      choices: ["CONTINUE", "EXIT"]
     })
-    .then(function (res) {
-        console.log(`${res.action}...\n`);
-        switch (res.action) {
-            case "EXIT":
-                connection.end(); 
-                break;
-                case "CONTINUE":
-                    startApp();
-                    break; 
-        }
+    .then(function(res) {
+      console.log(`${res.action}...\n`);
+      switch (res.action) {
+        case "EXIT":
+          connection.end();
+          break;
+        case "CONTINUE":
+          startApp();
+          break;
+      }
     })
-    .catch(function (err) {
-        console.log(err); 
-    })
+    .catch(function(err) {
+      console.log(err);
+    });
 }
 
 function genDepartmentPrompt() {
-    inquirer.prompt({
-        name: "action", 
-        type: "list",
-        message: "Please finish adding this role by creating the correct department.",
-        choices: ["CONTINUE", "EXIT"]
+  inquirer
+    .prompt({
+      name: "action",
+      type: "list",
+      message:
+        "Please finish adding this role by creating the correct department.",
+      choices: ["CONTINUE", "EXIT"]
     })
-    .then(function (res) {
-        console.log(`${res.action}...\n`);
-        switch (res.action) {
-            case "EXIT":
-                connection.end(); 
-                break; 
-            case "CONTINUE":
-                startApp(); 
-                break;
-        }
+    .then(function(res) {
+      console.log(`${res.action}...\n`);
+      switch (res.action) {
+        case "EXIT":
+          connection.end();
+          break;
+        case "CONTINUE":
+          startApp();
+          break;
+      }
     })
-    .catch(function (err) {
-        console.log(err); 
-    })
+    .catch(function(err) {
+      console.log(err);
+    });
 }
 
 function genRolePrompt() {
-    inquirer.prompt({
-        name: "action", 
-        type: "list",
-        message: "Please finish adding this employee by creating the correct role.",
-        choices: ["CONTINUE", "EXIT"]
+  inquirer
+    .prompt({
+      name: "action",
+      type: "list",
+      message:
+        "Please finish adding this employee by creating the correct role.",
+      choices: ["CONTINUE", "EXIT"]
     })
-    .then(function (res) {
-        console.log(`${res.action}...\n`);
-        switch (res.action) {
-            case "EXIT": 
-                connection.end(); 
-                break; 
-            case "CONTINUE":
-                startApp(); 
-                break; 
-        }
+    .then(function(res) {
+      console.log(`${res.action}...\n`);
+      switch (res.action) {
+        case "EXIT":
+          connection.end();
+          break;
+        case "CONTINUE":
+          startApp();
+          break;
+      }
     })
-    .catch(function (err) {
-        console.log(err);
-    })
+    .catch(function(err) {
+      console.log(err);
+    });
 }
