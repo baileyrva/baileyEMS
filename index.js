@@ -9,7 +9,7 @@ let connection = mysql.createConnection({
 
   port: 3306,
 
-  //database information for
+  //database information for app
   user: "root",
 
   password: "Smojoe12!",
@@ -24,6 +24,8 @@ connection.connect(function(err) {
   console.log("connected as id " + connection.threadId);
   startApp();
 });
+
+//start of application function defined 
 
 function startApp() {
   inquirer
@@ -66,7 +68,8 @@ function startApp() {
     });
 }
 
-//creating the data
+//creating the data function
+
 function createData(option) {
   switch (option) {
     case "Employee":
@@ -209,7 +212,7 @@ function createData(option) {
       });
       break;
 
-    //create department
+    //create department scenario 
     case "Department":
       inquirer
         .prompt([
@@ -449,6 +452,8 @@ function genDepartmentPrompt() {
       console.log(err);
     });
 }
+
+//prompting user to continue or exit application
 
 function genRolePrompt() {
   inquirer
