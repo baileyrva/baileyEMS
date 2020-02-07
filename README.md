@@ -8,7 +8,7 @@ The applicaiton is deployed using github. The files can be opened in terminal. A
 
 ## User Story
 **As an** employee manager\
-**I want** to create employees in different roles and departments
+**I want** to create employees in different roles and departments\
 **So that** I have quick access to all of my employees and their individual roles and salaries. 
 
 ## Credits
